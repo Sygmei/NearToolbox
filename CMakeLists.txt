@@ -2,14 +2,27 @@ cmake_minimum_required(VERSION 3.10)
 
 project(neartoolbox)
 
+add_subdirectory(extlibs/base58)
+add_subdirectory(extlibs/borsch)
 add_subdirectory(extlibs/ed25519)
+add_subdirectory(extlibs/httplib)
+add_subdirectory(extlibs/nearledger)
+add_subdirectory(extlibs/nlohmann)
+add_subdirectory(extlibs/sha256)
 
-file(GLOB NEAR_TB_HEADERS include/*.hpp)
+file(GLOB NEAR_TB_HEADERS include/*.hpp include/*.h)
 file(GLOB NEAR_TB_SOURCES src/*.cpp)
 
-add_library(neartoolbox SHARED ${NEAR_TB_HEADERS} ${NEAR_TB_SOURCES})
+# add_library(neartoolbox SHARED ${NEAR_TB_HEADERS} ${NEAR_TB_SOURCES})
+add_executable(neartoolbox ${NEAR_TB_HEADERS} ${NEAR_TB_SOURCES})
 
+target_link_libraries(neartoolbox base58)
+target_link_libraries(neartoolbox borsch)
 target_link_libraries(neartoolbox ed25519)
+target_link_libraries(neartoolbox httplib)
+target_link_libraries(neartoolbox nearledger)
+target_link_libraries(neartoolbox nlohmann::json)
+target_link_libraries(neartoolbox sha256)
 
 target_include_directories(neartoolbox
     PUBLIC
@@ -20,6 +33,6 @@ target_include_directories(neartoolbox
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_EXTENSIONS OFF)

@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.6)
-
 project(ed25519)
 
 file(GLOB ED25519_HEADERS include/ed25519/*.h)
