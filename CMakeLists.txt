@@ -1,10 +1,12 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.21)
 
 project(neartoolbox)
 
 add_subdirectory(extlibs/base58)
+add_subdirectory(extlibs/bignumber)
 add_subdirectory(extlibs/borsch)
 add_subdirectory(extlibs/ed25519)
+add_subdirectory(extlibs/fmt)
 add_subdirectory(extlibs/httplib)
 add_subdirectory(extlibs/nearledger)
 add_subdirectory(extlibs/nlohmann)
@@ -17,8 +19,10 @@ file(GLOB NEAR_TB_SOURCES src/*.cpp)
 add_executable(neartoolbox ${NEAR_TB_HEADERS} ${NEAR_TB_SOURCES})
 
 target_link_libraries(neartoolbox base58)
+target_link_libraries(neartoolbox bignumber)
 target_link_libraries(neartoolbox borsch)
 target_link_libraries(neartoolbox ed25519)
+target_link_libraries(neartoolbox fmt)
 target_link_libraries(neartoolbox httplib)
 target_link_libraries(neartoolbox nearledger)
 target_link_libraries(neartoolbox nlohmann::json)
@@ -33,6 +37,7 @@ target_include_directories(neartoolbox
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_EXTENSIONS OFF)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
