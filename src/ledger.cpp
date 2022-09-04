@@ -51,14 +51,14 @@ std::vector<uint8_t> encode_big_number(const BigNumber& number)
         }
     }
     std::vector<uint8_t> bytes(bytes_required, 0);
-    for (uint32_t byte_index = bytes_required; byte_index > 0; byte_index--)
+    for (uint32_t byte_index = bytes_required - 1; byte_index > 0; byte_index--)
     {
         BigNumber divisor = BigNumber(256).pow(byte_index);
         if (const BigNumber byte_value = number_copy / divisor; byte_value > 0)
         {
             // Little-endian encoding
-            bytes[byte_index - 1] = std::stoi(byte_value.getString());
-            number_copy = number_copy - divisor;
+            bytes[byte_index] = std::stoi(byte_value.asString());
+            number_copy = number_copy - (divisor * byte_value);
         }
     }
     return bytes;
@@ -124,26 +124,21 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    sha256::SHA256 hash;
-    hash.update("hello");
-    auto digested = hash.digest();
-    std::cout << sha256::SHA256::to_string(digested) << std::endl;
-
     std::string rpc_endpoint = fmt::format("http://rpc.{}.near.org", network_id);
 
     std::cout << "RPC Endpoint : " << rpc_endpoint << std::endl;
 
-    std::string seed = argv[3];
-    std::vector<uint8_t> seed_decoded;
-    if (!base58::decode(seed.data(), seed_decoded)) {
+    std::string ed25519_seed_b58 = argv[3];
+    std::array<uint8_t, 32> ed25519_seed;
+    if (!base58::decode(ed25519_seed_b58.data(), ed25519_seed.data())) {
         std::cerr << "Invalid base58 NEAR seed" << std::endl;
         return 1;
     }
 
-    std::array<uint8_t, 32> private_key = {};
-    std::copy(seed_decoded.begin(), seed_decoded.begin() + 32, private_key.data());
     std::array<uint8_t, 32> public_key = {};
-    std::copy(seed_decoded.begin() + 32, seed_decoded.end(), public_key.data());
+    std::array<uint8_t, 64> private_key = {};
+
+    ed25519_create_keypair(public_key.data(), private_key.data(), ed25519_seed.data());
     std::string public_key_b58 = base58::encode(public_key.data(), public_key.data() + public_key.size());
 
     std::cout << "Public Key : " << public_key_b58 << std::endl;
@@ -196,10 +191,22 @@ int main(int argc, char** argv)
     BorshEncoder encoder;
     encoder.Encode(transaction);
 
+    std::cout << std::endl;
+
+    std::cout << "Final bytes : ";
     for (auto c : encoder.GetBuffer()) {
         printf("%d, ", c);
     }
     printf("\n");
+
+    std::vector<uint8_t> tx_bytes = encoder.GetBuffer();
+    sha256::SHA256 tx_hasher;
+    tx_hasher.update(tx_bytes.data(), tx_bytes.size());
+    sha256::hash_container tx_hash = tx_hasher.digest();
+    std::array<uint8_t, 64> signature = {};
+    std::cout << "Message to sign : " << base58::encode(tx_hash.data(), tx_hash.data() + tx_hash.size()) << std::endl;
+
+    ed25519_sign(signature.data(), tx_hash.data(), tx_hash.size(), public_key.data(), private_key.data());
 
     return 0;
 }
