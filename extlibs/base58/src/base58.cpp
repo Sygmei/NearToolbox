@@ -61,6 +61,54 @@ bool decode(const char* psz, std::vector<unsigned char>& vch)
     return true;
 }
 
+bool decode(const char* psz, unsigned char* vch)
+{
+    // Skip leading spaces.
+    while (*psz && isspace(*psz))
+        psz++;
+    // Skip and count leading '1's.
+    int zeroes = 0;
+    while (*psz == '1') {
+        zeroes++;
+        psz++;
+    }
+    // Allocate enough space in big-endian base256 representation.
+    std::vector<unsigned char> b256(strlen(psz) * 733 / 1000 + 1); // log(58) / log(256), rounded up.
+    // Process the characters.
+    while (*psz && !isspace(*psz)) {
+        // Decode base58 character
+        const char* ch = strchr(pszBase58, *psz);
+        if (ch == NULL)
+            return false;
+        // Apply "b256 = b256 * 58 + ch".
+        int carry = ch - pszBase58;
+        for (std::vector<unsigned char>::reverse_iterator it = b256.rbegin(); it != b256.rend(); it++) {
+            carry += 58 * (*it);
+            *it = carry % 256;
+            carry /= 256;
+        }
+        assert(carry == 0);
+        psz++;
+    }
+    // Skip trailing spaces.
+    while (isspace(*psz))
+        psz++;
+    if (*psz != 0)
+        return false;
+    // Skip leading zeroes in b256.
+    std::vector<unsigned char>::iterator it = b256.begin();
+    while (it != b256.end() && *it == 0)
+        it++;
+    // Copy result into output vector.
+    unsigned int i = 0;
+    while (it != b256.end())
+    {
+        vch[i++] = (*(it++));
+    }
+        
+    return true;
+}
+
 std::string encode(const unsigned char* pbegin, const unsigned char* pend)
 {
     // Skip & count leading zeroes.
@@ -102,6 +150,11 @@ std::string encode(const std::vector<unsigned char>& vch)
 }
 
 bool decode(const std::string& str, std::vector<unsigned char>& vchRet)
+{
+    return decode(str.c_str(), vchRet);
+}
+
+bool decode(const std::string& str, unsigned char* vchRet)
 {
     return decode(str.c_str(), vchRet);
 }

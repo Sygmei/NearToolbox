@@ -367,6 +367,11 @@ BigNumber BigNumber::divide(BigNumber other)
     return quotient;
 }
 
+BigNumber BigNumber::modulo(BigNumber other)
+{
+    return *this - (other * (*this / other));
+}
+
 BigNumber BigNumber::dividell(const long long& other)
 {
     return this->divide(BigNumber(other));
@@ -375,6 +380,16 @@ BigNumber BigNumber::dividell(const long long& other)
 BigNumber BigNumber::dividestr(const std::string& other)
 {
     return this->divide(BigNumber(other));
+}
+
+BigNumber BigNumber::moduloll(const long long& other)
+{
+    return this->modulo(BigNumber(other));
+}
+
+BigNumber BigNumber::modulostr(const std::string& other)
+{
+    return this->modulo(BigNumber(other));
 }
 
 BigNumber BigNumber::pow(int exponent)
@@ -398,7 +413,7 @@ BigNumber BigNumber::pow(int exponent)
     return result;
 }
 
-std::string BigNumber::getString()
+std::string BigNumber::getString() const
 {
     return this->_numberString;
 }
@@ -541,6 +556,21 @@ BigNumber operator/(BigNumber b1, const long long& b2)
 BigNumber operator/(BigNumber b1, const std::string& b2)
 {
     return b1.dividestr(b2);
+}
+
+BigNumber operator%(BigNumber b1, const BigNumber& b2)
+{
+    return b1.modulo(b2);
+}
+
+BigNumber operator%(BigNumber b1, const long long& b2)
+{
+    return b1.moduloll(b2);
+}
+
+BigNumber operator%(BigNumber b1, const std::string& b2)
+{
+    return b1.modulostr(b2);
 }
 
 BigNumber operator^(BigNumber b1, const int& b2)

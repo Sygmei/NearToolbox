@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <cassert>
 #include <cmath>
 #include <cstring>
 #include <functional>
@@ -7,9 +7,12 @@
 #include <set>
 #include <string>
 #include <type_traits>
-#include <typeinfo>
 #include <unordered_map>
 #include <vector>
+
+#include <iostream>
+
+#include <borsh/visit_struct.hpp>
 
 
 namespace BorshCppInternals {
@@ -82,38 +85,63 @@ struct is_map<std::unordered_map<T, Alloc>> {
 
 class BorshEncoder {
 public:
-    template <typename... T>
-    constexpr BorshEncoder& Encode(const T&... types)
+    template <typename T, typename U, typename... Pack, typename=void>
+    constexpr BorshEncoder& Encode(const T& value, const U& value2, const Pack&... types)
     {
-        // Encode((types...));
+        Encode(value);
+        Encode(value2);
         (Encode(types), ...);
-        // printf("asd");
         return *this;
     }
 
-    template <typename T>
+    template <typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     constexpr BorshEncoder& Encode(const T value)
     {
-        if constexpr (std::is_integral<T>::value) {
-            const size_t typeSize = sizeof(T);
-            uint8_t offset = 0;
+        const size_t typeSize = sizeof(T);
+        uint8_t offset = 0;
 
-            for (size_t i = 0; i < typeSize; i++) {
-                m_Buffer.push_back((value >> offset) & 0xff);
-                offset += 8;
-            }
+        for (size_t i = 0; i < typeSize; i++) {
+            uint8_t current_byte = (value >> offset) & 0xff;
+            push_to_buffer({ current_byte });
+            offset += 8;
         }
 
-        if constexpr (std::is_floating_point<T>::value) {
-            assert(!std::isnan(value) || "NaN value found");
+        return *this;
+    }
 
-            // From https://github.com/naphaso/cbor-cpp/blob/master/src/encoder.cpp
-            const void* punny = &value;
+    template <typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+    constexpr BorshEncoder& Encode(const T value)
+    {
+        assert(!std::isnan(value) || "NaN value found");
 
-            for (size_t i = 0; i < sizeof(T); i++) {
-                m_Buffer.push_back(*((uint8_t*)punny + i));
-            }
+        // From https://github.com/naphaso/cbor-cpp/blob/master/src/encoder.cpp
+        const void* punny = &value;
+
+        for (size_t i = 0; i < sizeof(T); i++) {
+            uint8_t current_byte = *((uint8_t*)punny + i);
+            push_to_buffer({ current_byte });
         }
+
+        return *this;
+    }
+
+    template <typename T, typename std::enable_if<visit_struct::traits::is_visitable<visit_struct::traits::clean_t<T>>::value>::type* = nullptr>
+    BorshEncoder& Encode(const T& serializable_struct)
+    {
+        visit_struct::for_each(serializable_struct,
+            [this](const char* name, const auto& attribute) {
+                std::cout << "Encoding attribute " << name << std::endl;
+                Encode(attribute);
+            });
+
+        return *this;
+    }
+
+    template <typename T, typename std::enable_if<visit_struct::traits::is_encodable<visit_struct::traits::clean_t<T>>::value>::type* = nullptr>
+    BorshEncoder& Encode(const T& encodable_struct)
+    {
+        auto bytes = visit_struct::traits::encodable<visit_struct::traits::clean_t<T>>::bytes(encodable_struct);
+        push_to_buffer(bytes);
 
         return *this;
     }
@@ -122,8 +150,8 @@ public:
     {
         // Write the size of the string as an u32 integer
         Encode(static_cast<uint32_t>(str.size()));
-
-        m_Buffer.insert(m_Buffer.begin() + m_Buffer.size(), str.begin(), str.end());
+        const std::vector<uint8_t> str_bytes(str.begin(), str.end());
+        push_to_buffer(str_bytes);
 
         return *this;
     }
@@ -134,9 +162,8 @@ public:
         // Write the size of the string as an u32 integer
         Encode(size);
 
-        auto bytes = reinterpret_cast<const uint8_t*>(str);
-
-        m_Buffer.insert(m_Buffer.begin() + m_Buffer.size(), bytes, bytes + size);
+        const std::vector<uint8_t> str_bytes(str, str + size);
+        push_to_buffer(str_bytes);
 
         return *this;
     }
@@ -145,6 +172,16 @@ public:
     constexpr BorshEncoder& Encode(const std::initializer_list<T>& initList)
     {
         return Encode(std::pair { initList.begin(), initList.size() });
+    }
+
+    template <typename T, size_t ArraySize>
+    constexpr BorshEncoder& Encode(const std::array<T, ArraySize>& fixed_size_array)
+    {
+        for (auto value : fixed_size_array)
+        {
+            Encode(value);
+        }
+        return *this;
     }
 
     template <typename T, typename U>
@@ -195,18 +232,42 @@ public:
     constexpr BorshEncoder& Encode(const std::vector<T>& vector)
     {
         Encode((uint32_t)vector.size());
-        Encode(std::pair { vector.data(), vector.size() });
+        for (const auto& value : vector)
+        {
+            Encode(value);
+        }
+        // Encode(std::pair { vector.data(), vector.size() });
+
+        return *this;
+    }
+
+    template <typename... Args>
+    constexpr BorshEncoder& Encode(const std::variant<Args...>& variant_enum)
+    {
+        Encode(static_cast<uint8_t>(variant_enum.index()));
+        std::visit([this](auto&& value) { Encode(value); }, variant_enum);
 
         return *this;
     }
 
     const std::vector<uint8_t>& GetBuffer() const
     {
-        return m_Buffer;
+        return m_buffer;
     }
 
 private:
-    std::vector<uint8_t> m_Buffer;
+    std::vector<uint8_t> m_buffer;
+    void push_to_buffer(std::vector<uint8_t> data)
+    {
+        std::cout << "  New segment : ";
+        for (auto byte : data)
+        {
+            std::cout << static_cast<uint32_t>(byte) << ", ";
+        }
+        std::cout << std::endl;
+        m_buffer.insert(m_buffer.end(), data.begin(), data.end());
+    }
+
 };
 
 class BorshDecoder {

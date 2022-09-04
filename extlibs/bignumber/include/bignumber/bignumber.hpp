@@ -70,6 +70,13 @@ public:
     BigNumber divide(BigNumber other);
 
     /**
+     * Mod the current instance by another BigNumber
+     * @param other - The other BigNumber
+     * @return The modulo of the two BigNumbers
+     */
+    BigNumber modulo(BigNumber other);
+
+    /**
      * Raise the current instance to the power of an exponent
      * @param exponent - The power to be raised by
      * @return - The resulting BigNumber after exponentiation
@@ -80,7 +87,7 @@ public:
      * Get the string value of the current instance
      * @return The BigNumber as a string
      */
-    std::string getString();
+    std::string getString() const;
 
     /**
      * Set the value of the current instance with a string
@@ -198,6 +205,18 @@ public:
     friend BigNumber operator/(BigNumber b1, const BigNumber &b2);
     friend BigNumber operator/(BigNumber b1, const long long &b2);
     friend BigNumber operator/(BigNumber b1, const std::string &b2);
+    //@}
+
+    //@{
+    /**
+     * Modulo operator
+     * @param b1 - The current instance
+     * @param b2 - The number being mod by
+     * @return The modulo of the two numbers
+     */
+    friend BigNumber operator%(BigNumber b1, const BigNumber& b2);
+    friend BigNumber operator%(BigNumber b1, const long long& b2);
+    friend BigNumber operator%(BigNumber b1, const std::string& b2);
     //@}
 
     /**
@@ -343,8 +362,7 @@ public:
     unsigned int operator[](int index);
 
 private:
-    std::string _numberString; // The big number represented as a string
-
+    std::string _numberString; // The big number represented as a strin
     // Methods
     BigNumber addll(const long long &other);
     BigNumber addstr(const std::string &other);
@@ -354,6 +372,8 @@ private:
     BigNumber multiplystr(const std::string &other);
     BigNumber dividell(const long long &other);
     BigNumber dividestr(const std::string &other);
+    BigNumber moduloll(const long long& other);
+    BigNumber modulostr(const std::string& other);
 };
 
 #endif

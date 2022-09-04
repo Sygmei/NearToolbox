@@ -23,10 +23,12 @@ namespace base58
      * psz cannot be NULL.
      */
     bool decode(const char* psz, std::vector<unsigned char>& vchRet);
+    bool decode(const char* psz, unsigned char* vchRet);
 
     /**
      * Decode a base58-encoded string (str) into a byte vector (vchRet).
      * return true if decoding is successful.
      */
     bool decode(const std::string& str, std::vector<unsigned char>& vchRet);
+    bool decode(const std::string& str, unsigned char* vchRet);
 }
