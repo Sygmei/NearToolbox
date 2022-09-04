@@ -94,7 +94,7 @@ public:
         return *this;
     }
 
-    template <typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
+    template <typename T, std::enable_if_t<std::is_integral_v<T>>* = nullptr>
     constexpr BorshEncoder& Encode(const T value)
     {
         const size_t typeSize = sizeof(T);
@@ -109,7 +109,7 @@ public:
         return *this;
     }
 
-    template <typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+    template <typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
     constexpr BorshEncoder& Encode(const T value)
     {
         assert(!std::isnan(value) || "NaN value found");
@@ -125,7 +125,7 @@ public:
         return *this;
     }
 
-    template <typename T, typename std::enable_if<visit_struct::traits::is_visitable<visit_struct::traits::clean_t<T>>::value>::type* = nullptr>
+    template <typename T, std::enable_if_t<visit_struct::traits::is_visitable<visit_struct::traits::clean_t<T>>::value>* = nullptr>
     BorshEncoder& Encode(const T& serializable_struct)
     {
         visit_struct::for_each(serializable_struct,
@@ -133,6 +133,14 @@ public:
                 std::cout << "Encoding attribute " << name << std::endl;
                 Encode(attribute);
             });
+
+        return *this;
+    }
+
+    template <typename T, std::enable_if_t<std::is_enum_v<T>>* = nullptr>
+    constexpr BorshEncoder& Encode(const T enum_value)
+    {
+        push_to_buffer({ static_cast<uint8_t>(enum_value)});
 
         return *this;
     }

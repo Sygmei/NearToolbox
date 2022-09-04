@@ -12,7 +12,7 @@ add_subdirectory(extlibs/nearledger)
 add_subdirectory(extlibs/nlohmann)
 add_subdirectory(extlibs/sha256)
 
-file(GLOB NEAR_TB_HEADERS include/*.hpp include/*.h)
+file(GLOB NEAR_TB_HEADERS include/ntb/*.hpp include/ntb/*.h)
 file(GLOB NEAR_TB_SOURCES src/*.cpp)
 
 # add_library(neartoolbox SHARED ${NEAR_TB_HEADERS} ${NEAR_TB_SOURCES})

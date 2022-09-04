@@ -2,8 +2,8 @@
 
 #include <fmt/format.h>
 
-#include <near_utils.hpp>
-#include <string_utils.hpp>
+#include <ntb/near_utils.hpp>
+#include <ntb/string_utils.hpp>
 
 namespace ntb
 {

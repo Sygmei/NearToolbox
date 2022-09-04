@@ -1,5 +1,5 @@
 #pragma once
 
-#include <dllexport.h>
+#include <ntb/dllexport.h>
 
 EXPORTED void test_vector();
