@@ -9,6 +9,12 @@ namespace ntb
     {
     }
 
+    httplib::Result RPCClient::call_raw(const std::string& method_name, const nlohmann::json& payload)
+    {
+        auto resp = m_client.Post("/", payload.dump(), "application/json");
+        return resp;
+    }
+
     nlohmann::json RPCClient::call(const std::string& method_name, const nlohmann::json& parameters)
     {
         nlohmann::json payload = {

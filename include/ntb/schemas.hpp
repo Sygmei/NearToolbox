@@ -18,6 +18,10 @@ namespace ntb::schemas
     };
 
     struct FunctionCall {
+        std::string method_name;
+        std::vector<uint8_t> args;
+        uint64_t gas;
+        BigNumber deposit;
     };
 
     struct Transfer {
@@ -75,7 +79,7 @@ namespace ntb::schemas
 
 VISITABLE_EMPTY_STRUCT(ntb::schemas::CreateAccount);
 VISITABLE_EMPTY_STRUCT(ntb::schemas::DeployContract);
-VISITABLE_EMPTY_STRUCT(ntb::schemas::FunctionCall);
+VISITABLE_STRUCT(ntb::schemas::FunctionCall, method_name, args, gas, deposit);
 VISITABLE_STRUCT(ntb::schemas::Transfer, deposit);
 VISITABLE_EMPTY_STRUCT(ntb::schemas::Stake);
 VISITABLE_EMPTY_STRUCT(ntb::schemas::AddKey);

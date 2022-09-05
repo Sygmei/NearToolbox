@@ -15,6 +15,7 @@ namespace ntb
     public:
         RPCClient(const std::string& endpoint);
 
+        httplib::Result call_raw(const std::string& method_name, const nlohmann::json& payload);
         nlohmann::json call(const std::string& method_name, const nlohmann::json& payload);
         nlohmann::json query(const nlohmann::json& parameters);
     };
