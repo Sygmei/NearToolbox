@@ -5,7 +5,7 @@
 
 namespace ntb::encoders
 {
-    std::vector<uint8_t> encode_big_number(const BigNumber& number)
+    std::vector<uint8_t> encode_big_number(const BigNumber &number)
     {
         BigNumber number_copy = number;
         uint32_t bytes_required = 1;
@@ -23,7 +23,7 @@ namespace ntb::encoders
             if (const BigNumber byte_value = number_copy / divisor; byte_value > 0)
             {
                 // Little-endian encoding
-                bytes[byte_index] = std::stoi(byte_value.asString());
+                bytes[byte_index] = std::stoi(byte_value.as_string());
                 number_copy = number_copy - (divisor * byte_value);
             }
         }
