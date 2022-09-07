@@ -51,6 +51,8 @@ namespace ntb
     protected:
         BigNumber m_amount;
     public:
+        NearAmount(int amount);
+        NearAmount(long long amount);
         NearAmount(double amount);
         NearAmount(const std::string &amount);
         NearAmount(const char *amount);
@@ -105,7 +107,7 @@ namespace ntb
         TransactionResult transaction(const std::string &recipient, const std::vector<schemas::Action> &actions);
         TransactionResult transfer(const std::string &recipient, const NearAmount &amount);
         ContractCallResult contract_view(const std::string &contract_address, const std::string &method_name, const nlohmann::json &parameters = nlohmann::json::value_t::object);
-        ContractCallResult contract_call(const std::string &contract_address, const std::string &method_name, const nlohmann::json &parameters = nlohmann::json::value_t::object);
+        ContractCallResult contract_call(const std::string &contract_address, const std::string &method_name, const nlohmann::json &parameters = nlohmann::json::value_t::object, const NearAmount& deposit = 0);
 
         static std::string account_id_from_public_key(const std::array<uint8_t, 32>& public_key);
         static std::string account_id_from_online_resolver(const std::string& resolver_url, const std::array<uint8_t, 32>& public_key); // see: https://github.com/near/near-indexer-for-explorer#shared-public-access// with: https://github.com/taocpp/taopq

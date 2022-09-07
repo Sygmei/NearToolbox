@@ -21,11 +21,11 @@ namespace ntb::schemas
         std::string method_name;
         std::vector<uint8_t> args;
         uint64_t gas;
-        BigNumber deposit;
+        BigNumber deposit; // TODO: specify dump size (here u128)
     };
 
     struct Transfer {
-        BigNumber deposit;
+        BigNumber deposit; // TODO: specify dump size (here u128)
     };
 
     struct Stake {

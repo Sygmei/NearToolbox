@@ -17,6 +17,14 @@ namespace ntb
         return m_amount;
     }
 
+    NearAmount::NearAmount(int amount) : NearAmount(std::to_string(amount))
+    {
+    }
+
+    NearAmount::NearAmount(long long amount) : NearAmount(std::to_string(amount))
+    {
+    }
+
     NearAmount::NearAmount(double amount) : NearAmount(std::to_string(amount))
     {
     }
@@ -131,6 +139,12 @@ namespace ntb
         BorshEncoder tx_encoder;
         tx_encoder.Encode(transaction);
         std::vector<uint8_t> tx_bytes = tx_encoder.GetBuffer();
+        std::cout << "TX PAYLOAD [";
+        for (uint8_t byte : tx_bytes)
+        {
+            std::cout << static_cast<int>(byte) << ", ";
+        }
+        std::cout << "]" <<std::endl;
 
         // Building Transaction signature
         sha256::SHA256 tx_hasher;
@@ -161,11 +175,11 @@ namespace ntb
     constexpr uint64_t MAX_GAS = 30000000000000;
 
     ContractCallResult NearClient::contract_call(const std::string& contract_address, const std::string& method_name,
-        const nlohmann::json& parameters)
+        const nlohmann::json& parameters, const NearAmount& deposit)
     {
-        const std::string parameters_b64 = base64::encode(parameters.dump());
+        const std::string parameters_b64 = parameters.dump();
         const std::vector<uint8_t> parameters_bytes(parameters_b64.cbegin(), parameters_b64.cend());
-        const std::vector<schemas::Action> actions = { schemas::FunctionCall { method_name, parameters_bytes, MAX_GAS, 0 } };
+        const std::vector<schemas::Action> actions = { schemas::FunctionCall { method_name, parameters_bytes, MAX_GAS, deposit } };
         const auto tx_data = transaction(contract_address, actions);
         return ContractCallResult{ tx_data, {} };
     }

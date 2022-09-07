@@ -16,8 +16,8 @@ namespace ntb::encoders
                 break;
             }
         }
-        std::vector<uint8_t> bytes(bytes_required, 0);
-        for (uint32_t byte_index = bytes_required - 1; byte_index > 0; byte_index--)
+        std::vector<uint8_t> bytes(16, 0); // TODO: Use template type that indicates dump size in schemas
+        for (int32_t byte_index = bytes_required - 1; byte_index >= 0; byte_index--)
         {
             BigNumber divisor = BigNumber(256).pow(byte_index);
             if (const BigNumber byte_value = number_copy / divisor; byte_value > 0)
