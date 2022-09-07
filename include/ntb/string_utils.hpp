@@ -15,4 +15,6 @@ namespace ntb
     std::vector<std::string> split(const std::string& str, const std::string& delimiters);
     std::string lpad(std::string str, const size_t num, const char padding_char = ' ');
     std::string rpad(std::string str, const size_t num, const char padding_char = ' ');
+    bool ends_with(const std::string& string, const std::string& search);
+    bool is_string_int(const std::string& str);
 }

@@ -23,7 +23,7 @@ namespace ntb::encoders
             if (const BigNumber byte_value = number_copy / divisor; byte_value > 0)
             {
                 // Little-endian encoding
-                bytes[byte_index] = std::stoi(byte_value.as_string());
+                bytes[byte_index] = static_cast<uint8_t>(std::stoi(byte_value.as_string()));
                 number_copy = number_copy - (divisor * byte_value);
             }
         }

@@ -8,6 +8,7 @@
 
 #include <ntb/rpc.hpp>
 #include <ntb/schemas.hpp>
+#include <ntb/signer.hpp>
 
 namespace ntb
 {
@@ -17,29 +18,9 @@ namespace ntb
         constexpr std::string_view mainnet = "mainnet";
     }
 
-    struct ED25519Seed
+    struct TransactionResult
     {
-        std::array<uint8_t, 32> seed;
-
-        ED25519Seed(const std::string &b58_encoded_seed);
-        ED25519Seed(const std::array<uint8_t, 32> &seed);
-    };
-
-    struct ED25519Keypair
-    {
-        std::array<uint8_t, 64> private_key;
-        std::array<uint8_t, 32> public_key;
-
-        ED25519Keypair(const std::string &b58_encoded_private_key_or_seed);
-        ED25519Keypair(const std::array<uint8_t, 64> &private_key);
-        ED25519Keypair(const std::array<uint8_t, 32> &seed);
-
-        std::string private_key_as_b58() const;
-        std::string public_key_as_b58() const;
-    };
-
-    class TransactionResult
-    {
+        nlohmann::json data;
     };
 
     class TransferResult
@@ -48,7 +29,7 @@ namespace ntb
 
     enum class AccessKeyPermission
     {
-        None
+        None,
         FunctionCall,
         FullAccess,
     };
@@ -62,13 +43,21 @@ namespace ntb
 
     struct NearAmount
     {
-        BigNumber amount;
-
+    protected:
+        BigNumber m_amount;
+    public:
         NearAmount(double amount);
         NearAmount(const std::string &amount);
         NearAmount(const char *amount);
 
-        static NearAmount from_yocto(const std::string &amount);
+        friend static NearAmount from_yocto(const std::string &amount)
+        {
+            NearAmount near_amount(0.0);
+            near_amount.m_amount = amount;
+            return near_amount;
+        }
+
+        operator BigNumber() const;
     };
 
     constexpr std::string_view NEAR_DERIVATION_PATH = "44'/397'/0'/0'/1'";
@@ -79,31 +68,34 @@ namespace ntb
         std::string m_network;
         ntb::RPCClient m_rpc;
 
-        bool m_hardware_wallet = false;
-        std::string m_derivation_path;
-
         std::string m_account_id;
-        ED25519Keypair m_keypair;
+        std::unique_ptr<Signer> m_signer;
         AccessKey m_access_key;
 
     protected:
+        static std::string _get_rpc_endpoint(const std::string& network);
         void _load_access_key();
         void _resolve_account_id(); // see: https://github.com/near/near-indexer-for-explorer#shared-public-access
                                     // with: https://github.com/taocpp/taopq
         void _assert_access_key_sufficient_permissions(AccessKeyPermission minimum_permission);
 
     public:
-        NearClient(const std::string_view network);
-
-        static ED25519Keypair create_account();
-
-        void login(const ED25519Keypair &keypair, const std::string &account_id = "");
-        void login(const std::string &seed_or_private_key, const std::string &account_id = "");
-        void login_with_ledger(std::string_view derivation_path = NEAR_DERIVATION_PATH, const std::string &account_id = "");
+        template <class SignerClass>
+        explicit NearClient(const std::string_view network, const SignerClass& signing_method, const std::string& account_id = "");
 
         TransactionResult transaction(const std::string &recipient, const std::vector<schemas::Action> &actions);
-        TransferResult transfer(const std::string &recipient, const NearAmount &amount);
+        TransactionResult transfer(const std::string &recipient, const NearAmount &amount);
         void contract_view(const std::string &contract_address, const std::string &method_name, const nlohmann::json &parameters);
         void contract_call(const std::string &contract_address, const std::string &method_name, const nlohmann::json &parameters);
     };
+
+    template <class SignerClass>
+    NearClient::NearClient(const std::string_view network, const SignerClass& signing_method, const std::string& account_id)
+        : m_network(network)
+        , m_rpc(_get_rpc_endpoint(network.data()))
+        , m_signer(std::make_unique<SignerClass>(signing_method))
+        , m_account_id(account_id)
+    {
+        _load_access_key();
+    }
 }

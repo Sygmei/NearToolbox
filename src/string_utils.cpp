@@ -86,4 +86,22 @@ namespace ntb
         return str;
     }
 
+    bool ends_with(const std::string& string, const std::string& search)
+    {
+        if (string.size() < search.size())
+        {
+            return false;
+        }
+        return (
+            std::mismatch(search.rbegin(), search.rend(), string.rbegin()).first == search.rend());
+    }
+
+    bool is_string_int(const std::string& str)
+    {
+        if (!str.empty())
+        {
+            return std::all_of(str.begin(), str.end(), isdigit);
+        }
+        return false;
+    }
 }

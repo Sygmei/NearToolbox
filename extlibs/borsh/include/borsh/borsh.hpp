@@ -166,7 +166,7 @@ public:
 
     BorshEncoder& Encode(const char* str)
     {
-        const uint32_t size = std::strlen(str);
+        const size_t size = std::strlen(str);
         // Write the size of the string as an u32 integer
         Encode(size);
 

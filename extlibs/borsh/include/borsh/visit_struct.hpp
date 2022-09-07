@@ -617,16 +617,16 @@ namespace visit_struct
     }                                                                                                                                            \
     static_assert(true, "")
 
-#define ENCODABLE_STRUCT(STRUCT_NAME, ENCODER_FUNC)                               \
-    template <>                                                                   \
-    struct visit_struct::traits::encodable<STRUCT_NAME, void>                     \
-    {                                                                             \
-        [[nodiscard]] static std::vector<uint8_t> bytes(const STRUCT_NAME &value) \
-        {                                                                         \
-            return ENCODER_FUNC(value);                                           \
-        }                                                                         \
-        static VISIT_STRUCT_CONSTEXPR const bool value = true;                    \
-    };                                                                            \
+#define ENCODABLE_STRUCT(STRUCT_NAME, ENCODER_FUNC)                                \
+    template <>                                                                    \
+    struct visit_struct::traits::encodable<STRUCT_NAME, void>                      \
+    {                                                                              \
+        [[nodiscard]] static std::vector<uint8_t> bytes(const STRUCT_NAME &_value) \
+        {                                                                          \
+            return ENCODER_FUNC(_value);                                           \
+        }                                                                          \
+        static VISIT_STRUCT_CONSTEXPR const bool value = true;                     \
+    };                                                                             \
     static_assert(true, "")
 
 } // end namespace visit_struct

@@ -24,6 +24,12 @@ namespace ntb
             {"params", parameters}};
         auto resp = call_raw(payload);
 
+        const auto error = resp.error();
+        if (error != httplib::Error::Success)
+        {
+            return cpp::fail(RPCError{httplib::to_string(error)});
+        }
+
         if (resp->status >= 200 && resp->status <= 299)
         {
             auto result_or_error = nlohmann::json::parse(resp->body);
@@ -38,7 +44,7 @@ namespace ntb
         }
         else
         {
-            return cpp::fail(RPCError{});
+            return cpp::fail(RPCError{ resp->body });
         }
     }
 
