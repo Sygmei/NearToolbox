@@ -20,7 +20,12 @@ namespace ntb
 
     struct TransactionResult
     {
-        nlohmann::json data;
+        nlohmann::json tx_data;
+    };
+
+    struct ContractCallResult : public TransactionResult
+    {
+        nlohmann::json result;
     };
 
     class TransferResult
@@ -60,6 +65,21 @@ namespace ntb
         operator BigNumber() const;
     };
 
+
+    struct ImplicitAccount {};
+
+    struct NamedAccount
+    {
+        std::string account_id;
+    };
+
+    struct AccountIdResolver
+    {
+        std::string resolver_url = "http://resolver.near.org/network/{}/public_key/{}";
+    };
+
+    using AccountId = std::variant<ImplicitAccount, NamedAccount, AccountIdResolver>;
+
     constexpr std::string_view NEAR_DERIVATION_PATH = "44'/397'/0'/0'/1'";
 
     class NearClient
@@ -75,27 +95,29 @@ namespace ntb
     protected:
         static std::string _get_rpc_endpoint(const std::string& network);
         void _load_access_key();
-        void _resolve_account_id(); // see: https://github.com/near/near-indexer-for-explorer#shared-public-access
-                                    // with: https://github.com/taocpp/taopq
         void _assert_access_key_sufficient_permissions(AccessKeyPermission minimum_permission);
+        void _resolve_account_id(AccountId account_id);
 
     public:
         template <class SignerClass>
-        explicit NearClient(const std::string_view network, const SignerClass& signing_method, const std::string& account_id = "");
+        explicit NearClient(const std::string_view network, const SignerClass& signing_method, const AccountId& account_id);
 
         TransactionResult transaction(const std::string &recipient, const std::vector<schemas::Action> &actions);
         TransactionResult transfer(const std::string &recipient, const NearAmount &amount);
-        void contract_view(const std::string &contract_address, const std::string &method_name, const nlohmann::json &parameters);
-        void contract_call(const std::string &contract_address, const std::string &method_name, const nlohmann::json &parameters);
+        ContractCallResult contract_view(const std::string &contract_address, const std::string &method_name, const nlohmann::json &parameters = nlohmann::json::value_t::object);
+        ContractCallResult contract_call(const std::string &contract_address, const std::string &method_name, const nlohmann::json &parameters = nlohmann::json::value_t::object);
+
+        static std::string account_id_from_public_key(const std::array<uint8_t, 32>& public_key);
+        static std::string account_id_from_online_resolver(const std::string& resolver_url, const std::array<uint8_t, 32>& public_key); // see: https://github.com/near/near-indexer-for-explorer#shared-public-access// with: https://github.com/taocpp/taopq
     };
 
     template <class SignerClass>
-    NearClient::NearClient(const std::string_view network, const SignerClass& signing_method, const std::string& account_id)
+    NearClient::NearClient(const std::string_view network, const SignerClass& signing_method, const AccountId& account_id)
         : m_network(network)
         , m_rpc(_get_rpc_endpoint(network.data()))
         , m_signer(std::make_unique<SignerClass>(signing_method))
-        , m_account_id(account_id)
     {
+        _resolve_account_id(account_id);
         _load_access_key();
     }
 }

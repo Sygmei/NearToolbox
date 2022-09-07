@@ -60,11 +60,45 @@ namespace ntb
         };
     }
 
+    std::string NearClient::account_id_from_public_key(const std::array<uint8_t, 32>& public_key)
+    {
+        std::stringstream ss;
+        ss << std::hex << std::setfill('0');
+        for (const uint8_t byte : public_key) {
+            ss << std::hex << std::setw(2) << static_cast<int>(byte);
+        }
+
+        return ss.str();
+    }
+
+    std::string NearClient::account_id_from_online_resolver([[maybe_unused]] const std::string& resolver_url,
+        [[maybe_unused]] const std::array<uint8_t, 32>& public_key)
+    {
+        return ""; // TODO
+    }
+
     void NearClient::_assert_access_key_sufficient_permissions(AccessKeyPermission minimum_permission)
     {
         const bool sufficient_permission = static_cast<uint8_t>(m_access_key.permission) >= static_cast<uint8_t>(minimum_permission);
         if (!sufficient_permission) {
             throw std::runtime_error("AccessKey has unsufficient permission");
+        }
+    }
+
+    void NearClient::_resolve_account_id(AccountId account_id)
+    {
+        if (std::holds_alternative<ImplicitAccount>(account_id))
+        {
+            m_account_id = NearClient::account_id_from_public_key(m_signer->get_public_key());
+        }
+        else if (std::holds_alternative<NamedAccount>(account_id))
+        {
+            m_account_id = std::get<NamedAccount>(account_id).account_id;
+        }
+        else if (std::holds_alternative<AccountIdResolver>(account_id))
+        {
+            const std::string resolver_url = std::get<AccountIdResolver>(account_id).resolver_url;
+            m_account_id = account_id_from_online_resolver(resolver_url, m_signer->get_public_key());
         }
     }
 
@@ -77,7 +111,7 @@ namespace ntb
 
         // Retrieving recent block hash
         std::string block_hash_b58 = m_access_key.block_hash;
-        std::array<uint8_t, 32> recent_block_hash;
+        std::array<uint8_t, 32> recent_block_hash = {};
         if (!base58::decode(block_hash_b58, recent_block_hash.data()))
         {
             throw std::runtime_error(fmt::format("Could not decode recent block hash '{}'", block_hash_b58));
@@ -114,7 +148,7 @@ namespace ntb
         // Broadcasting transaction
         nlohmann::json broadcast_tx_parameters = { base64::encode(signed_tx_bytes.data(), signed_tx_bytes.size()) };
         auto broadcast_resp = m_rpc.call("broadcast_tx_commit", broadcast_tx_parameters);
-        auto broadcast_result = broadcast_resp.expect("failed to broadcast transaction").data;
+        auto broadcast_result = broadcast_resp.expect("failed to broadcast transaction").data; // TODO: better error handling
 
         return TransactionResult { broadcast_result };
     }
@@ -122,5 +156,35 @@ namespace ntb
     TransactionResult NearClient::transfer(const std::string& recipient, const NearAmount& amount)
     {
         return transaction(recipient, { ntb::schemas::Transfer{amount} });
+    }
+
+    constexpr uint64_t MAX_GAS = 30000000000000;
+
+    ContractCallResult NearClient::contract_call(const std::string& contract_address, const std::string& method_name,
+        const nlohmann::json& parameters)
+    {
+        const std::string parameters_b64 = base64::encode(parameters.dump());
+        const std::vector<uint8_t> parameters_bytes(parameters_b64.cbegin(), parameters_b64.cend());
+        const std::vector<schemas::Action> actions = { schemas::FunctionCall { method_name, parameters_bytes, MAX_GAS, 0 } };
+        const auto tx_data = transaction(contract_address, actions);
+        return ContractCallResult{ tx_data, {} };
+    }
+
+    ContractCallResult NearClient::contract_view(const std::string& contract_address, const std::string& method_name,
+        const nlohmann::json& parameters)
+    {
+        const std::string call_parameters_b64 = base64::encode(parameters.dump());
+        const nlohmann::json query_parameters = {
+            { "request_type", "call_function" },
+            { "finality", "final" },
+            { "account_id", contract_address },
+            { "method_name", method_name },
+            { "args_base64", call_parameters_b64 }
+        };
+        auto query_resp = m_rpc.query(query_parameters);
+        auto tx_data = query_resp.expect("failed to query smart contract").data;
+        std::vector<uint8_t> call_result_bytes = tx_data["result"];
+        const std::string call_result_str = std::string(call_result_bytes.begin(), call_result_bytes.end());
+        return ContractCallResult{ tx_data, nlohmann::json::parse(call_result_str)};
     }
 }
