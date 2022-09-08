@@ -7,6 +7,8 @@
 #else
 #define EXPORTED __declspec(dllimport)
 #endif
+#elif __APPLE__
+#define EXPORTED __attribute__((visibility("default")))
 #else
 #define EXPORTED
 #endif
