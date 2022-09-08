@@ -1,0 +1,5 @@
+add_executable(near_simple_tx simple_tx.cpp)
+target_link_libraries(near_simple_tx neartoolbox)
+
+add_executable(near_smart_contract_all smart_contract_call.cpp)
+target_link_libraries(near_smart_contract_all neartoolbox)

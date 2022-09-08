@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.21)
 
 project(neartoolbox)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 add_subdirectory(extlibs/base58)
 add_subdirectory(extlibs/bignumber)
 add_subdirectory(extlibs/borsh)
@@ -17,8 +19,8 @@ add_subdirectory(extlibs/sha256)
 file(GLOB NEAR_TB_HEADERS include/ntb/*.hpp include/ntb/*.h)
 file(GLOB NEAR_TB_SOURCES src/*.cpp)
 
-# add_library(neartoolbox SHARED ${NEAR_TB_HEADERS} ${NEAR_TB_SOURCES})
-add_executable(neartoolbox ${NEAR_TB_HEADERS} ${NEAR_TB_SOURCES})
+add_library(neartoolbox SHARED ${NEAR_TB_HEADERS} ${NEAR_TB_SOURCES})
+# add_executable(neartoolbox ${NEAR_TB_HEADERS} ${NEAR_TB_SOURCES})
 
 target_link_libraries(neartoolbox base58)
 target_link_libraries(neartoolbox bignumber)
@@ -52,4 +54,11 @@ add_link_options(-fsanitize=address)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_EXTENSIONS OFF)
+set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
+
+option(BUILD_EXAMPLES "builds examples" OFF)
+
+if (BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()

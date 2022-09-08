@@ -50,6 +50,7 @@ namespace ntb
     {
     protected:
         BigNumber m_amount;
+
     public:
         NearAmount(int amount);
         NearAmount(long long amount);
@@ -57,7 +58,7 @@ namespace ntb
         NearAmount(const std::string &amount);
         NearAmount(const char *amount);
 
-        friend static NearAmount from_yocto(const std::string &amount)
+        static NearAmount from_yocto(const std::string &amount)
         {
             NearAmount near_amount(0.0);
             near_amount.m_amount = amount;
@@ -67,8 +68,9 @@ namespace ntb
         operator BigNumber() const;
     };
 
-
-    struct ImplicitAccount {};
+    struct ImplicitAccount
+    {
+    };
 
     struct NamedAccount
     {
@@ -95,29 +97,27 @@ namespace ntb
         AccessKey m_access_key;
 
     protected:
-        static std::string _get_rpc_endpoint(const std::string& network);
+        static std::string _get_rpc_endpoint(const std::string &network);
         void _load_access_key();
         void _assert_access_key_sufficient_permissions(AccessKeyPermission minimum_permission);
         void _resolve_account_id(AccountId account_id);
 
     public:
         template <class SignerClass>
-        explicit NearClient(const std::string_view network, const SignerClass& signing_method, const AccountId& account_id);
+        explicit NearClient(const std::string_view network, const SignerClass &signing_method, const AccountId &account_id);
 
         TransactionResult transaction(const std::string &recipient, const std::vector<schemas::Action> &actions);
         TransactionResult transfer(const std::string &recipient, const NearAmount &amount);
         ContractCallResult contract_view(const std::string &contract_address, const std::string &method_name, const nlohmann::json &parameters = nlohmann::json::value_t::object);
-        ContractCallResult contract_call(const std::string &contract_address, const std::string &method_name, const nlohmann::json &parameters = nlohmann::json::value_t::object, const NearAmount& deposit = 0);
+        ContractCallResult contract_call(const std::string &contract_address, const std::string &method_name, const nlohmann::json &parameters = nlohmann::json::value_t::object, const NearAmount &deposit = 0);
 
-        static std::string account_id_from_public_key(const std::array<uint8_t, 32>& public_key);
-        static std::string account_id_from_online_resolver(const std::string& resolver_url, const std::array<uint8_t, 32>& public_key); // see: https://github.com/near/near-indexer-for-explorer#shared-public-access// with: https://github.com/taocpp/taopq
+        static std::string account_id_from_public_key(const std::array<uint8_t, 32> &public_key);
+        static std::string account_id_from_online_resolver(const std::string &resolver_url, const std::array<uint8_t, 32> &public_key); // see: https://github.com/near/near-indexer-for-explorer#shared-public-access// with: https://github.com/taocpp/taopq
     };
 
     template <class SignerClass>
-    NearClient::NearClient(const std::string_view network, const SignerClass& signing_method, const AccountId& account_id)
-        : m_network(network)
-        , m_rpc(_get_rpc_endpoint(network.data()))
-        , m_signer(std::make_unique<SignerClass>(signing_method))
+    NearClient::NearClient(const std::string_view network, const SignerClass &signing_method, const AccountId &account_id)
+        : m_network(network), m_rpc(_get_rpc_endpoint(network.data())), m_signer(std::make_unique<SignerClass>(signing_method))
     {
         _resolve_account_id(account_id);
         _load_access_key();

@@ -29,16 +29,15 @@ namespace ntb
     {
     }
 
-    NearAmount::NearAmount(const std::string& amount) : m_amount(ntb::parse_near_amount(amount).value_or("0"))
+    NearAmount::NearAmount(const std::string &amount) : m_amount(ntb::parse_near_amount(amount).value_or("0"))
     {
     }
 
-    NearAmount::NearAmount(const char* amount) : NearAmount(std::string(amount))
+    NearAmount::NearAmount(const char *amount) : NearAmount(std::string(amount))
     {
     }
 
-
-    std::string NearClient::_get_rpc_endpoint(const std::string& network)
+    std::string NearClient::_get_rpc_endpoint(const std::string &network)
     {
         return fmt::format("http://rpc.{}.near.org", network);
     }
@@ -47,11 +46,10 @@ namespace ntb
     {
         // Retrieving AccessKey details
         const nlohmann::json access_key_query_parameters = {
-            { "request_type", "view_access_key" },
-            { "finality", "final" },
-            { "account_id", m_account_id },
-            { "public_key", fmt::format("ed25519:{}", m_signer->get_public_key_as_b58()) }
-        };
+            {"request_type", "view_access_key"},
+            {"finality", "final"},
+            {"account_id", m_account_id},
+            {"public_key", fmt::format("ed25519:{}", m_signer->get_public_key_as_b58())}};
 
         auto access_key_resp = m_rpc.query(access_key_query_parameters);
         auto access_key_result = access_key_resp.expect("failed to get AccessKey details").data;
@@ -61,26 +59,26 @@ namespace ntb
 
         const std::string permission_level = access_key_result["permission"];
         const uint64_t nonce = access_key_result["nonce"];
-        m_access_key = AccessKey {
+        m_access_key = AccessKey{
             magic_enum::enum_cast<AccessKeyPermission>(permission_level).value_or(AccessKeyPermission::None),
             nonce,
-            access_key_result["block_hash"]
-        };
+            access_key_result["block_hash"]};
     }
 
-    std::string NearClient::account_id_from_public_key(const std::array<uint8_t, 32>& public_key)
+    std::string NearClient::account_id_from_public_key(const std::array<uint8_t, 32> &public_key)
     {
         std::stringstream ss;
         ss << std::hex << std::setfill('0');
-        for (const uint8_t byte : public_key) {
+        for (const uint8_t byte : public_key)
+        {
             ss << std::hex << std::setw(2) << static_cast<int>(byte);
         }
 
         return ss.str();
     }
 
-    std::string NearClient::account_id_from_online_resolver([[maybe_unused]] const std::string& resolver_url,
-        [[maybe_unused]] const std::array<uint8_t, 32>& public_key)
+    std::string NearClient::account_id_from_online_resolver([[maybe_unused]] const std::string &resolver_url,
+                                                            [[maybe_unused]] const std::array<uint8_t, 32> &public_key)
     {
         return ""; // TODO
     }
@@ -88,7 +86,8 @@ namespace ntb
     void NearClient::_assert_access_key_sufficient_permissions(AccessKeyPermission minimum_permission)
     {
         const bool sufficient_permission = static_cast<uint8_t>(m_access_key.permission) >= static_cast<uint8_t>(minimum_permission);
-        if (!sufficient_permission) {
+        if (!sufficient_permission)
+        {
             throw std::runtime_error("AccessKey has unsufficient permission");
         }
     }
@@ -110,7 +109,7 @@ namespace ntb
         }
     }
 
-    TransactionResult NearClient::transaction(const std::string& recipient, const std::vector<schemas::Action>& actions)
+    TransactionResult NearClient::transaction(const std::string &recipient, const std::vector<schemas::Action> &actions)
     {
         _assert_access_key_sufficient_permissions(AccessKeyPermission::FullAccess);
 
@@ -144,7 +143,7 @@ namespace ntb
         {
             std::cout << static_cast<int>(byte) << ", ";
         }
-        std::cout << "]" <<std::endl;
+        std::cout << "]" << std::endl;
 
         // Building Transaction signature
         sha256::SHA256 tx_hasher;
@@ -154,51 +153,50 @@ namespace ntb
         std::array<uint8_t, 64> signature = m_signer->sign(msg_to_sign);
 
         // Building SignedTransaction
-        ntb::schemas::SignedTransaction signed_transaction{ transaction, ntb::schemas::Signature{ntb::schemas::KeyType::ED25519, signature} };
+        ntb::schemas::SignedTransaction signed_transaction{transaction, ntb::schemas::Signature{ntb::schemas::KeyType::ED25519, signature}};
         BorshEncoder signed_tx_encoder;
         signed_tx_encoder.Encode(signed_transaction);
         std::vector<uint8_t> signed_tx_bytes = signed_tx_encoder.GetBuffer();
 
         // Broadcasting transaction
-        nlohmann::json broadcast_tx_parameters = { base64::encode(signed_tx_bytes.data(), signed_tx_bytes.size()) };
+        nlohmann::json broadcast_tx_parameters = {base64::encode(signed_tx_bytes.data(), signed_tx_bytes.size())};
         auto broadcast_resp = m_rpc.call("broadcast_tx_commit", broadcast_tx_parameters);
         auto broadcast_result = broadcast_resp.expect("failed to broadcast transaction").data; // TODO: better error handling
 
-        return TransactionResult { broadcast_result };
+        return TransactionResult{broadcast_result};
     }
 
-    TransactionResult NearClient::transfer(const std::string& recipient, const NearAmount& amount)
+    TransactionResult NearClient::transfer(const std::string &recipient, const NearAmount &amount)
     {
-        return transaction(recipient, { ntb::schemas::Transfer{amount} });
+        return transaction(recipient, {ntb::schemas::Transfer{amount}});
     }
 
     constexpr uint64_t MAX_GAS = 30000000000000;
 
-    ContractCallResult NearClient::contract_call(const std::string& contract_address, const std::string& method_name,
-        const nlohmann::json& parameters, const NearAmount& deposit)
+    ContractCallResult NearClient::contract_call(const std::string &contract_address, const std::string &method_name,
+                                                 const nlohmann::json &parameters, const NearAmount &deposit)
     {
         const std::string parameters_b64 = parameters.dump();
         const std::vector<uint8_t> parameters_bytes(parameters_b64.cbegin(), parameters_b64.cend());
-        const std::vector<schemas::Action> actions = { schemas::FunctionCall { method_name, parameters_bytes, MAX_GAS, deposit } };
+        const std::vector<schemas::Action> actions = {schemas::FunctionCall{method_name, parameters_bytes, MAX_GAS, deposit}};
         const auto tx_data = transaction(contract_address, actions);
-        return ContractCallResult{ tx_data, {} };
+        return ContractCallResult{tx_data, {}};
     }
 
-    ContractCallResult NearClient::contract_view(const std::string& contract_address, const std::string& method_name,
-        const nlohmann::json& parameters)
+    ContractCallResult NearClient::contract_view(const std::string &contract_address, const std::string &method_name,
+                                                 const nlohmann::json &parameters)
     {
         const std::string call_parameters_b64 = base64::encode(parameters.dump());
         const nlohmann::json query_parameters = {
-            { "request_type", "call_function" },
-            { "finality", "final" },
-            { "account_id", contract_address },
-            { "method_name", method_name },
-            { "args_base64", call_parameters_b64 }
-        };
+            {"request_type", "call_function"},
+            {"finality", "final"},
+            {"account_id", contract_address},
+            {"method_name", method_name},
+            {"args_base64", call_parameters_b64}};
         auto query_resp = m_rpc.query(query_parameters);
         auto tx_data = query_resp.expect("failed to query smart contract").data;
         std::vector<uint8_t> call_result_bytes = tx_data["result"];
         const std::string call_result_str = std::string(call_result_bytes.begin(), call_result_bytes.end());
-        return ContractCallResult{ tx_data, nlohmann::json::parse(call_result_str)};
+        return ContractCallResult{tx_data, nlohmann::json::parse(call_result_str)};
     }
 }

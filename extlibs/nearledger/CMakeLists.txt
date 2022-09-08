@@ -54,10 +54,3 @@ install(TARGETS nearledger
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/include
 )
-
-set(BUILD_EXAMPLES OFF CACHE BOOL "Build examples ?")
-
-if(BUILD_EXAMPLES)
-    add_executable(nearledger_examples examples/main.cpp)
-    target_link_libraries(nearledger_examples nearledger::nearledger)
-endif()
