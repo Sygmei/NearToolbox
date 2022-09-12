@@ -3,3 +3,6 @@ target_link_libraries(near_simple_tx neartoolbox)
 
 add_executable(near_smart_contract_all smart_contract_call.cpp)
 target_link_libraries(near_smart_contract_all neartoolbox)
+
+add_executable(near_simple_tx_with_ledger simple_tx_with_ledger.cpp)
+target_link_libraries(near_simple_tx_with_ledger neartoolbox)

@@ -84,8 +84,6 @@ namespace ntb
 
     using AccountId = std::variant<ImplicitAccount, NamedAccount, AccountIdResolver>;
 
-    constexpr std::string_view NEAR_DERIVATION_PATH = "44'/397'/0'/0'/1'";
-
     class NearClient
     {
     private:
@@ -104,7 +102,7 @@ namespace ntb
 
     public:
         template <class SignerClass>
-        explicit NearClient(const std::string_view network, const SignerClass &signing_method, const AccountId &account_id);
+        explicit NearClient(const std::string_view network, SignerClass &&signing_method, const AccountId &account_id);
 
         TransactionResult transaction(const std::string &recipient, const std::vector<schemas::Action> &actions);
         TransactionResult transfer(const std::string &recipient, const NearAmount &amount);
@@ -116,8 +114,8 @@ namespace ntb
     };
 
     template <class SignerClass>
-    NearClient::NearClient(const std::string_view network, const SignerClass &signing_method, const AccountId &account_id)
-        : m_network(network), m_rpc(_get_rpc_endpoint(network.data())), m_signer(std::make_unique<SignerClass>(signing_method))
+    NearClient::NearClient(const std::string_view network, SignerClass &&signing_method, const AccountId &account_id)
+        : m_network(network), m_rpc(_get_rpc_endpoint(network.data())), m_signer(std::make_unique<SignerClass>(std::move(signing_method)))
     {
         _resolve_account_id(account_id);
         _load_access_key();

@@ -161,7 +161,12 @@ namespace ntb
         // Broadcasting transaction
         nlohmann::json broadcast_tx_parameters = {base64::encode(signed_tx_bytes.data(), signed_tx_bytes.size())};
         auto broadcast_resp = m_rpc.call("broadcast_tx_commit", broadcast_tx_parameters);
-        auto broadcast_result = broadcast_resp.expect("failed to broadcast transaction").data; // TODO: better error handling
+        if (broadcast_resp.has_error())
+        {
+            auto error = broadcast_resp.error();
+            throw std::runtime_error(error.data.dump());
+        }
+        auto broadcast_result = broadcast_resp.value().data; // TODO: better error handling
 
         return TransactionResult{broadcast_result};
     }

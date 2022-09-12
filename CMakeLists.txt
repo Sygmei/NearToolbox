@@ -63,6 +63,13 @@ if (BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
+option(ENABLE_LEDGER "enable Ledger wallet integration" OFF)
+
+if (ENABLE_LEDGER)
+  target_compile_definitions(neartoolbox PUBLIC NTB_ENABLE_LEDGER)
+endif()
+
+
 include(GNUInstallDirs)
 install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

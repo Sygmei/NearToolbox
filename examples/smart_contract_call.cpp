@@ -3,7 +3,7 @@
 
 #include <ntb/near.hpp>
 
-int smart_contract_call_example([[maybe_unused]] int argc, char **argv)
+int main([[maybe_unused]] int argc, char **argv)
 {
     const std::string sender = argv[1];
     const std::string contract_address = argv[2];

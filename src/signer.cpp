@@ -1,19 +1,20 @@
+#include <iostream>
 #include <stdexcept>
 
 #include <base58/base58.hpp>
 #include <ed25519/ed25519.h>
 
-#include "ntb/near_utils.hpp"
-
-extern "C" {
+extern "C"
+{
 #include <ed25519/ge.h>
 }
 
+#include <ntb/near_utils.hpp>
 #include <ntb/signer.hpp>
 
 namespace ntb
 {
-    ED25519Keypair::ED25519Keypair(const std::string& b58_encoded_private_key_or_seed)
+    ED25519Keypair::ED25519Keypair(const std::string &b58_encoded_private_key_or_seed)
     {
         std::vector<uint8_t> buffer = {};
         const bool result = base58::decode(b58_encoded_private_key_or_seed.data(), buffer);
@@ -47,7 +48,7 @@ namespace ntb
         }
     }
 
-    ED25519Keypair::ED25519Keypair(const std::array<uint8_t, 64>& private_key)
+    ED25519Keypair::ED25519Keypair(const std::array<uint8_t, 64> &private_key)
         : m_private_key(private_key)
     {
         // derive public key from private key
@@ -56,7 +57,7 @@ namespace ntb
         ge_p3_tobytes(m_public_key.data(), &A);
     }
 
-    ED25519Keypair::ED25519Keypair(const std::array<uint8_t, 32>& seed)
+    ED25519Keypair::ED25519Keypair(const std::array<uint8_t, 32> &seed)
     {
         // Building Keypair from seed
         ed25519_create_keypair(m_public_key.data(), m_private_key.data(), seed.data());
@@ -82,7 +83,7 @@ namespace ntb
         return m_public_key;
     }
 
-    std::array<uint8_t, 64> ED25519Keypair::sign(const std::vector<uint8_t>& msg) const
+    std::array<uint8_t, 64> ED25519Keypair::sign(const std::vector<uint8_t> &msg) const
     {
         std::array<uint8_t, 64> signature = {};
         ed25519_sign(signature.data(), msg.data(), msg.size(), m_public_key.data(), m_private_key.data());
@@ -100,7 +101,7 @@ namespace ntb
     }
 
 #ifdef NTB_ENABLE_LEDGER
-    LedgerWallet::LedgerWallet()
+    LedgerWallet::LedgerWallet(const std::string &derivation_path) : m_derivation_path(derivation_path)
     {
         m_ledger.open();
         m_ledger.get_version();
@@ -121,7 +122,7 @@ namespace ntb
         m_ledger.get_version();
         const std::vector<uint8_t> derivation_path = bip32_path_to_bytes(m_derivation_path);
         const auto public_key_or_error = m_ledger.get_public_key(derivation_path);
-        
+
         const ledger::Error error = std::get<0>(public_key_or_error);
         if (error != ledger::Error::SUCCESS)
         {
@@ -129,15 +130,16 @@ namespace ntb
             throw std::runtime_error(error_message);
         }
         const std::vector<uint8_t> public_key = std::get<1>(public_key_or_error);
-        m_public_key = std::array<uint8_t, 32> {};
+        m_public_key = std::array<uint8_t, 32>{};
         std::copy(public_key.begin(), public_key.end(), m_public_key->data());
         return m_public_key.value();
     }
 
-    std::array<uint8_t, 64> LedgerWallet::sign(const std::vector<uint8_t>& msg) const
+    std::array<uint8_t, 64> LedgerWallet::sign(const std::vector<uint8_t> &msg) const
     {
         const std::vector<uint8_t> derivation_path = bip32_path_to_bytes(m_derivation_path);
-        const auto signed_message_or_error = m_ledger.sign(derivation_path, msg);
+        m_ledger.get_version();
+        const auto signed_message_or_error = m_ledger.sign(derivation_path, msg, 0x80);
         const ledger::Error error = std::get<0>(signed_message_or_error);
         if (error != ledger::Error::SUCCESS)
         {
