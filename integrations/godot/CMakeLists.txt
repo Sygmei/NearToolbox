@@ -1,8 +1,21 @@
-project(godot-near-client)
+project(neartoolbox_godot)
 cmake_minimum_required(VERSION 3.6)
 
-set(GODOT_HEADERS_PATH ../godot-headers/ CACHE STRING "Path to Godot headers")
-set(CPP_BINDINGS_PATH ../ CACHE STRING "Path to C++ bindings")
+
+include(FetchContent)
+set(GODOT_CPP_PATH "${CMAKE_CURRENT_BINARY_DIR}/godot-cpp")
+FetchContent_Declare(godot-cpp
+  GIT_REPOSITORY "https://github.com/godotengine/godot-cpp.git"
+  GIT_TAG "origin/master"
+  SOURCE_DIR "${GODOT_CPP_PATH}"
+)
+FetchContent_MakeAvailable(godot-cpp)
+
+message("Building godot-cpp")
+execute_process(COMMAND "scons" "target=debug" WORKING_DIRECTORY ${GODOT_CPP_PATH})
+
+set(GODOT_HEADERS_PATH "${GODOT_CPP_PATH}/godot-headers/" CACHE STRING "Path to Godot headers")
+set(CPP_BINDINGS_PATH "${GODOT_CPP_PATH}/" CACHE STRING "Path to C++ bindings")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	set(TARGET_PATH x11)
@@ -14,10 +27,8 @@ else()
 	message(FATAL_ERROR "Not implemented support for ${CMAKE_SYSTEM_NAME}")
 endif()
 
-add_subdirectory(extlibs/NearToolbox)
-
 # Change the output directory to the bin directory
-set(BUILD_PATH ${CMAKE_SOURCE_DIR}/bin/${TARGET_PATH})
+set(BUILD_PATH ${CMAKE_CURRENT_BINARY_DIR}/bin/${TARGET_PATH})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${BUILD_PATH}")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${BUILD_PATH}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${BUILD_PATH}")

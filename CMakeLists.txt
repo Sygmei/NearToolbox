@@ -58,17 +58,24 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 option(BUILD_EXAMPLES "builds examples" OFF)
-
 if (BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
 option(ENABLE_LEDGER "enable Ledger wallet integration" OFF)
-
 if (ENABLE_LEDGER)
   target_compile_definitions(neartoolbox PUBLIC NTB_ENABLE_LEDGER)
 endif()
 
+option(BUILD_UNITY_INTEGRATION "build Unity integration" OFF)
+if (BUILD_UNITY_INTEGRATION)
+  add_subdirectory(integrations/unity)
+endif()
+
+option(BUILD_GODOT_INTEGRATION "build Godot integration" OFF)
+if (BUILD_GODOT_INTEGRATION)
+  add_subdirectory(integrations/godot)
+endif()
 
 include(GNUInstallDirs)
 install(TARGETS ${PROJECT_NAME}

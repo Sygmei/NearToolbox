@@ -116,8 +116,8 @@ void NearClientWrapper::login()
     std::string network_str = godot_string_to_std_string(m_network);
     std::string b58_seed_or_private_key_str = godot_string_to_std_string(m_private_key);
     std::string account_id_str = godot_string_to_std_string(m_account_id);
-    const auto signing_method = ntb::ED25519Keypair(b58_seed_or_private_key_str);
-    m_near = std::make_unique<ntb::NearClient>(network_str, signing_method, ntb::NamedAccount{account_id_str});
+    auto signing_method = ntb::ED25519Keypair(b58_seed_or_private_key_str);
+    m_near = std::make_unique<ntb::NearClient>(network_str, std::move(signing_method), ntb::NamedAccount{account_id_str});
 }
 
 void NearClientWrapper::transfer(String recipient, String amount)
